@@ -124,3 +124,28 @@ WHERE body LIKE '%fox%'
 
 1. Query phase
 2. Fetch phase
+
+--- 
+
+# Documents
+https://www.elastic.co/docs/get-started/howto-use-the-docs
+https://www.elastic.co/docs/deploy-manage/deploy/self-managed/local-development-installation-quickstart
+https://www.elastic.co/training
+https://www.elastic.co/docs/solutions/search
+https://www.elastic.co/docs/solutions/search/get-started
+https://www.elastic.co/pt/virtual-events/getting-started-elasticsearch?elektra=en-elasticsearch-page
+https://www.elastic.co/docs/solutions/search/get-started/keyword-search-python
+https://www.elastic.co/docs/explore-analyze/query-filter/languages/querydsl
+https://www.elastic.co/docs/manage-data/data-store/manage-data-from-the-command-line
+https://www.elastic.co/docs/solutions/search/get-started/index-basics
+
+## By Order of Reading
+
+1. https://www.elastic.co/pt/virtual-events/getting-started-elasticsearch?elektra=en-elasticsearch-page
+2. https://www.elastic.co/docs/solutions/search/search-approaches
+3. https://www.elastic.co/docs/explore-analyze/query-filter
+4. https://www.elastic.co/search-labs/tutorials/search-tutorial/welcome
+5. https://www.elastic.co/docs/deploy-manage/deploy/self-managed/local-development-installation-quickstart
+5. https://www.elastic.co/docs/solutions/search/get-started/index-basics
+6. https://www.elastic.co/docs/reference/elasticsearch-clients
+7. https://www.elastic.co/docs/explore-analyze/query-filter/languages/querydsl
