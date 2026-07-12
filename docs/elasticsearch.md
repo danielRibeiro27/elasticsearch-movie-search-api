@@ -138,14 +138,28 @@ https://www.elastic.co/docs/solutions/search/get-started/keyword-search-python
 https://www.elastic.co/docs/explore-analyze/query-filter/languages/querydsl
 https://www.elastic.co/docs/manage-data/data-store/manage-data-from-the-command-line
 https://www.elastic.co/docs/solutions/search/get-started/index-basics
+https://www.elastic.co/docs/deploy-manage/deploy/self-managed/install-elasticsearch-docker-basic
+https://www.elastic.co/docs/reference/elasticsearch/clients/dotnet
 
 ## By Order of Reading
 
 1. https://www.elastic.co/pt/virtual-events/getting-started-elasticsearch?elektra=en-elasticsearch-page
 2. https://www.elastic.co/docs/solutions/search/search-approaches
-3. https://www.elastic.co/docs/explore-analyze/query-filter
+3. https://www.elastic.co/docs/explore-analyze/query-filterd
 4. https://www.elastic.co/search-labs/tutorials/search-tutorial/welcome
 5. https://www.elastic.co/docs/deploy-manage/deploy/self-managed/local-development-installation-quickstart
 5. https://www.elastic.co/docs/solutions/search/get-started/index-basics
 6. https://www.elastic.co/docs/reference/elasticsearch-clients
 7. https://www.elastic.co/docs/explore-analyze/query-filter/languages/querydsl
+
+## Commands
+docker run -p 127.0.0.1:9200:9200 -d --name elasticsearch \
+  -e "discovery.type=single-node" \
+  -e "xpack.security.enabled=false" \
+  -e "xpack.license.self_generated.type=basic" \
+  -v "elasticsearch-data:/usr/share/elasticsearch/data" \
+  docker.elastic.co/elasticsearch/elasticsearch:8.15.0
+
+curl -fsSL https://elastic.co/start-local | sh
+
+dotnet add package Elastic.Clients.Elasticsearch
