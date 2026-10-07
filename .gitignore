@@ -39,6 +39,14 @@ ScaffoldingReadMe.txt
 # dotenv environment variables file
 .env
 
+# Local configuration that can contain development secrets
+appsettings.Local.json
+appsettings.*.local.json
+values-*.local.yaml
+values-*.local.yml
+secrets.local.yaml
+secrets.local.yml
+
 # Others
 ~$*
 *~
@@ -55,3 +63,7 @@ CodeCoverage/
 *.VisualState.xml
 TestResult.xml
 nunit-*.xml
+
+# Local Data
+/local-data/
+

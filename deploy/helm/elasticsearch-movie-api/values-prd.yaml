@@ -1,0 +1,26 @@
+environment: Production
+
+api:
+  appName: elasticsearch-movie-api
+  configMapName: elasticsearch-movie-api-config
+  serviceName: elasticsearch-movie-api-service
+  replicaCount: 1
+  containerPort: 8080
+
+  image:
+    repository: elasticsearch-movie-api
+    tag: latest
+    pullPolicy: IfNotPresent
+
+elasticsearch:
+  containerName: elasticsearch
+  configMapName: elasticsearch-config
+  nodeCount: 1
+  url: "https://elasticsearch-movie-api-es-http:9200"
+  resources:
+    requests:
+      cpu: 500m
+      memory: 1Gi
+    limits:
+      cpu: "1"
+      memory: 1Gi

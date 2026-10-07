@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.api.appName }}
+spec:
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      # Avoid an extra API pod during updates on the small local cluster.
+      maxSurge: 0
+      maxUnavailable: 1
+  replicas: {{ .Values.api.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ .Values.api.appName }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.api.appName }}
+
+    spec:
+
+      containers:
+        - name: {{ .Values.api.appName }}
+          image: "{{ .Values.api.image.repository }}:{{ .Values.api.image.tag }}"
+          imagePullPolicy: {{ .Values.api.image.pullPolicy }}
+          resources:
+            {{- toYaml .Values.api.resources | nindent 12 }}
+          ports:
+            - containerPort: {{ .Values.api.containerPort }}
+          envFrom:
+            - configMapRef:
+                name: {{ .Values.api.configMapName }}
+          env:
+            # Inject Elasticsearch connection details
+            - name: Elasticsearch__Url
+              value: "{{ .Values.elasticsearch.url }}"
+            - name: Elasticsearch__ResetIndexOnStartup
+              value: {{ .Values.elasticsearch.resetIndexOnStartup | quote }}
+            # The app derives the TLS fingerprint from this ECK CA certificate.
+            - name: Elasticsearch__CertificateAuthorityPem
+              valueFrom:
+                secretKeyRef:
+                  name: elasticsearch-movie-api-es-http-ca-internal
+                  key: ca.crt
+            # ECK's elastic-user secret only stores the password, keyed by the fixed "elastic" username.
+            - name: Elasticsearch__Username
+              value: "elastic"
+            - name: Elasticsearch__Password
+              valueFrom:
+                secretKeyRef:
+                  name: elasticsearch-movie-api-es-elastic-user
+                  key: elastic

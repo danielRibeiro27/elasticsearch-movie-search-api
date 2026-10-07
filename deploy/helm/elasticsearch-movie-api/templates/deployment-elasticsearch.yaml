@@ -1,0 +1,29 @@
+apiVersion: elasticsearch.k8s.elastic.co/v1
+kind: Elasticsearch
+metadata:
+  name: elasticsearch-movie-api
+spec:
+  # Keep the Elasticsearch version pinned to the version tested by this project.
+  version: 9.5.4
+  # Helm renders nodeCount from the selected values file.
+  nodeSets:
+    - name: default
+      count: {{ .Values.elasticsearch.nodeCount }}
+      podTemplate:
+        spec:
+          # Raises vm.max_map_count on the node so mmap-based stores stay enabled;
+          # disabling mmap instead forces niofs, which drives disk I/O to 100%.
+          initContainers:
+            - name: sysctl
+              securityContext:
+                privileged: true
+                runAsUser: 0
+              command:
+                - sh
+                - -c
+                - sysctl -w vm.max_map_count=262144
+          containers:
+            - name: elasticsearch
+              resources:
+                {{- toYaml .Values.elasticsearch.resources | nindent 16 }}
+    

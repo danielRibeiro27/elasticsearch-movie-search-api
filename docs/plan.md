@@ -16,7 +16,7 @@ This spec should be built in the smallest possible sequence of working slices.
 
    * `Id` — required
    * `Title` — required
-   * `Description` 
+   * `Overview`
    * `Year`
    * `Language`
    * `Rating`
@@ -39,7 +39,7 @@ This spec should be built in the smallest possible sequence of working slices.
 
 ## Phase 3 — Seed from CSV
 
-8. Put `movies.csv` in `data`.
+8. Put `movies.csv` in `local-data`.
 9. Parse the CSV.
 10. Map CSV rows into `Movie` objects.
 11. Bulk insert the records into Elasticsearch through `/seed`.
@@ -52,7 +52,7 @@ This spec should be built in the smallest possible sequence of working slices.
 13. Make it search by:
 
 * title
-* description
+* overview
 
 14. Return a simple list of movies.
 
@@ -143,7 +143,7 @@ This spec should be built in the smallest possible sequence of working slices.
 The project is good enough when all of this is true:
 
 - [ ] You can seed the index from CSV.
-- [ ] You can search by title/description.
+- [ ] You can search by title/overview.
 - [ ] You can filter by year/language/rating.
 - [ ] You can autocomplete partial titles.
 - [ ] You can reindex the catalog.

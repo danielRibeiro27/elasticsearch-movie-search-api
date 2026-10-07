@@ -1,0 +1,16 @@
+{
+    "chat.tools.terminal.autoApprove": {
+        "/^Get-Location; dotnet build src/ElasticsearchMovieApi\\.csproj --no-restore$/": {
+            "approve": true,
+            "matchCommandLine": true
+        },
+        "/^dotnet build src/ElasticsearchMovieApi\\.csproj --no-restore$/": {
+            "approve": true,
+            "matchCommandLine": true
+        },
+        "/^dotnet build \"c:\\\\Users\\\\Daniel\\\\\\.copilot\\\\repos\\\\elasticsearch-movie-search-api\\\\src\\\\ElasticsearchMovieApi\\.csproj\" --no-restore$/": {
+            "approve": true,
+            "matchCommandLine": true
+        }
+    }
+}

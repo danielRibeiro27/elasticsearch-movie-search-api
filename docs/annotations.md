@@ -16,7 +16,7 @@ That search is the chore of the project, because it uses elasticsearch for solvi
 - Elasticsearch
 
 ## The API
-A simple API that allows a title and description search
+A simple API that allows a title and overview search
 
 ## Endpoints
 - POST /seed
@@ -35,7 +35,7 @@ There is no need for using complex patterns, the project should only have: a con
 
 elasticsearch-movie-search-api
 ├── docs
-├── data
+├── local-data
 ├── ├── movies.csv
 ├── src
 ├── ├── /Controllers
