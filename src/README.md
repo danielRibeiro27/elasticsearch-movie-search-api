@@ -11,7 +11,18 @@ This approach is inefficien and results in a high CPU usage, as indicated by the
 
 ### MovieElasticsearchRepository
 
-This approach improves performance significantly
+This approach improves performance significantly.
+
+### Measured Search Latency
+
+Both lines come from `execution.log` (`operation=movie-search`, same title search):
+
+| Repository | Strategy | Log entry | Elapsed |
+|-|-|-|-|
+| `MovieCsvRepository` | Full scan, reading the CSV from disk on every request | `2026-10-14T19:11:28.6472361+00:00 operation=movie-search elapsed_ms=6402.230` | 6402.230 ms (~6.4 s) |
+| Elasticsearch (indexed), local / inside Kubernetes | Index lookup | `2026-10-14T18:59:34.4202704+00:00 operation=movie-search elapsed_ms=8.287` | 8.287 ms |
+
+The indexed Elasticsearch search was about 770x faster (6402.230 / 8.287 ≈ 772.5) than the full CSV scan. These are single-request samples, not averaged benchmarks.
 
 ## Configuracao do Elasticsearch
 

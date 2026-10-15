@@ -41,7 +41,7 @@ spec:
             - name: Elasticsearch__CertificateAuthorityPem
               valueFrom:
                 secretKeyRef:
-                  name: elasticsearch-movie-api-es-http-ca-internal
+                  name: elasticsearch-movie-api-es-http-certs-public
                   key: ca.crt
             # ECK's elastic-user secret only stores the password, keyed by the fixed "elastic" username.
             - name: Elasticsearch__Username

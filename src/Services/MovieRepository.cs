@@ -51,4 +51,9 @@ public class MovieRepository : IMovieRepository
             .ToList();
         return Task.FromResult(results);
     }
+
+    public Task<Movie?> SearchById(string id)
+    {
+        throw new NotImplementedException();
+    }
 }

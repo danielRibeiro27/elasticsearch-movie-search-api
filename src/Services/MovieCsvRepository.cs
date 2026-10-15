@@ -6,7 +6,7 @@ namespace ElasticsearchMovieApi.Services;
 public class MovieCsvRepository : IMovieRepository
 {
     private readonly string _movieDatasetPath = Environment.GetEnvironmentVariable("MOVIE_CSV_PATH")
-        ?? "C:\\Data\\movie dataset\\movies.csv";
+        ?? "/local-data/movies.csv";
 
     public MovieCsvRepository()
     {
@@ -86,5 +86,10 @@ public class MovieCsvRepository : IMovieRepository
             .Select(movie => movie!)
             .Where(movie => string.IsNullOrWhiteSpace(overview) ||
                 movie.Overview.Contains(overview, StringComparison.OrdinalIgnoreCase));
+    }
+
+    public Task<Movie?> SearchById(string id)
+    {
+        throw new NotImplementedException();
     }
 }

@@ -57,28 +57,6 @@ public class ElasticsearchService : IMovieRepository, IHostedService
 
     public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
 
-    public async Task<IEnumerable<Movie>> SearchByTitle(string title)
-    {
-        var response = await _client.SearchAsync<Movie>(search =>
-            search.Indices(_indexName)
-            .Query(q => q
-                .Match(m => m.Field(f => f.Title).Query(title))
-            )
-        );
-        return response.Documents;
-    }
-
-    public async Task<IEnumerable<Movie>> SearchByOverview(string overview)
-    {
-        var response = await _client.SearchAsync<Movie>(search =>
-            search.Indices(_indexName)
-            .Query(q => q
-                .Match(m => m.Field(f => f.Overview).Query(overview))
-            )
-        );
-        return response.Documents;
-    }
-
     public async Task CreateIndexIfNotExistAsync(string indexName)
     {
         if (!(await _client.Indices.ExistsAsync(indexName)).Exists)
@@ -87,8 +65,38 @@ public class ElasticsearchService : IMovieRepository, IHostedService
         }
     }
 
+    private static string ResolveCsvPath(string csvFilePath)
+    {
+        if (File.Exists(csvFilePath))
+        {
+            return csvFilePath;
+        }
+
+        if (Path.IsPathRooted(csvFilePath))
+        {
+            throw new FileNotFoundException("Movie CSV not found. Set MOVIE_CSV_PATH to its full path.", csvFilePath);
+        }
+
+        // Debuggers often start in the project folder, so search parent folders for the relative path.
+        foreach (var start in new[] { Directory.GetCurrentDirectory(), AppContext.BaseDirectory })
+        {
+            for (var dir = new DirectoryInfo(start); dir is not null; dir = dir.Parent)
+            {
+                var candidate = Path.Combine(dir.FullName, csvFilePath);
+                if (File.Exists(candidate))
+                {
+                    return candidate;
+                }
+            }
+        }
+
+        throw new FileNotFoundException($"Movie CSV not found. Set MOVIE_CSV_PATH to its full path.", csvFilePath);
+    }
+
     private async Task BulkIndexAsync(string indexName, string csvFilePath, CancellationToken cancellationToken)
     {
+        // Resolve the CSV before creating the index so a bad path cannot leave an empty index that skips later imports.
+        csvFilePath = ResolveCsvPath(csvFilePath);
         await CreateIndexIfNotExistAsync(indexName);
 
         var fileInfo = new FileInfo(csvFilePath);
@@ -228,5 +236,40 @@ public class ElasticsearchService : IMovieRepository, IHostedService
         fields.Add(field.ToString().Trim());
         return fields;
     }
+
+#region Searchs
+
+    public async Task<IEnumerable<Movie>> SearchByTitle(string title)
+    {
+        var response = await _client.SearchAsync<Movie>(search =>
+            search.Indices(_indexName)
+            .Query(q => q
+                .Match(m => m.Field(f => f.Title).Query(title))
+            )
+        );
+        return response.Documents;
+    }
+
+    public async Task<IEnumerable<Movie>> SearchByOverview(string overview)
+    {
+        var response = await _client.SearchAsync<Movie>(search =>
+            search.Indices(_indexName)
+            .Query(q => q
+                .Match(m => m.Field(f => f.Overview).Query(overview))
+            )
+        );
+        return response.Documents;
+    }
+
+    public async Task<Movie?> SearchById(string id)
+    {
+        var response = await _client.GetAsync<Movie>(id, m => m.Index(_indexName));
+        if(response.IsValidResponse && response.Found && response.Source != null)
+            return response.Source;        
+
+        return null;
+    }
+
+#endregion
 
 }

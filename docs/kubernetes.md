@@ -6,7 +6,7 @@ Run these commands from the repository root in PowerShell. They use a separate M
 ## Build The Image
 
 ```powershell
-docker build -t elasticsearch-movie-api:latest -f .\src\Dockerfile .
+docker build -t elasticsearch-movie-api:latest -f ./src/Dockerfile .
 ```
 
 ## Start Minikube
@@ -27,7 +27,7 @@ Wait for the Ingress controller, then load the local image into this profile:
 
 ```powershell
 kubectl --context minikube wait --namespace ingress-nginx --for=condition=Ready pod --selector=app.kubernetes.io/component=controller --timeout=180s
-minikube image load -p movie-api elasticsearch-movie-api:latest
+minikube image load -p minikube elasticsearch-movie-api:latest
 ```
 
 ## Install The ECK Operator
@@ -44,15 +44,16 @@ kubectl get crds
 
 ## Install The Helm Chart
 
-The chart creates the Elasticsearch resource and API deployment. Install it once; do not apply the Helm template directly with `kubectl`, because Helm values must be rendered first. Disable Helm 4 server-side apply here so it does not conflict with ECK's ownership of `spec.nodeSets`.
+The chart creates the Elasticsearch resource and API deployment. Install it once; do not apply the Helm template directly with `kubectl`, because Helm values must be rendered first. 
+Disable Helm 4 server-side apply here so it does not conflict with ECK's ownership of `spec.nodeSets`.
 
 Validate and install the Helm chart:
 
 ```powershell
-helm lint .\deploy\helm\elasticsearch-movie-api -f .\deploy\helm\elasticsearch-movie-api\values-dev.yaml
-helm upgrade --install elasticsearch-movie-api .\deploy\helm\elasticsearch-movie-api -f .\deploy\helm\elasticsearch-movie-api\values-dev.yaml --kube-context movie-api --server-side=false
-kubectl --context movie-api rollout status deployment/elasticsearch-movie-api --timeout=180s
-kubectl --context movie-api get pods
+helm lint ./deploy/helm/elasticsearch-movie-api -f ./deploy/helm/elasticsearch-movie-api/values-dev.yaml
+helm upgrade --install elasticsearch-movie-api ./deploy/helm/elasticsearch-movie-api -f ./deploy/helm/elasticsearch-movie-api/values-dev.yaml --kube-context minikube --server-side=false
+kubectl --context minikube rollout status deployment/elasticsearch-movie-api --timeout=180s
+kubectl --context minikube get pods
 ```
 
 ## Watch CSV Indexing
@@ -62,22 +63,29 @@ The CSV is copied into the API image at `/app/data/movies.csv`; it is not a Kube
 Follow the API logs while it reads and indexes the CSV. Progress messages report submitted/completed batches, rows read, skipped rows, and indexed movies:
 
 ```powershell
-kubectl --context movie-api -n default logs --follow deployment/elasticsearch-movie-api --timestamps
+kubectl --context minikube -n default logs --follow deployment/elasticsearch-movie-api --timestamps
 ```
 
 If the API container restarted, inspect its previous container logs as well:
 
 ```powershell
-$apiPod = kubectl --context movie-api -n default get pods -l app=elasticsearch-movie-api -o jsonpath='{.items[0].metadata.name}'
-kubectl --context movie-api -n default logs $apiPod --previous --timestamps
+$apiPod = kubectl --context minikube -n default get pods -l app=elasticsearch-movie-api -o jsonpath='{.items[0].metadata.name}'
+kubectl --context minikube -n default logs $apiPod --previous --timestamps
+```
+
+On Ubuntu, use command substitution to get the pod name:
+
+```bash
+apiPod=$(kubectl --context minikube -n default get pods -l app=elasticsearch-movie-api -o jsonpath='{.items[0].metadata.name}')
+kubectl --context minikube -n default logs "$apiPod" --previous --timestamps
 ```
 
 Check pod state and Elasticsearch data-volume usage in another terminal:
 
 ```powershell
-kubectl --context movie-api -n default get pods --watch
-kubectl --context movie-api -n default get pvc
-kubectl --context movie-api -n default exec elasticsearch-movie-api-es-default-0 -- df -h /usr/share/elasticsearch/data
+kubectl --context minikube -n default get pods --watch
+kubectl --context minikube -n default get pvc
+kubectl --context minikube -n default exec elasticsearch-movie-api-es-default-0 -- df -h /usr/share/elasticsearch/data
 ```
 
 ## Reset The Movie Index
@@ -85,14 +93,14 @@ kubectl --context movie-api -n default exec elasticsearch-movie-api-es-default-0
 To discard and rebuild only the `movies` index, enable the one-shot reset setting for a Helm upgrade. Watch the logs until they report `CSV import complete`:
 
 ```powershell
-helm upgrade --install elasticsearch-movie-api .\deploy\helm\elasticsearch-movie-api -f .\deploy\helm\elasticsearch-movie-api\values-dev.yaml --set elasticsearch.resetIndexOnStartup=true --kube-context movie-api --server-side=false
-kubectl --context movie-api -n default logs --follow deployment/elasticsearch-movie-api --timestamps
+helm upgrade --install elasticsearch-movie-api ./deploy/helm/elasticsearch-movie-api -f ./deploy/helm/elasticsearch-movie-api/values-dev.yaml --set elasticsearch.resetIndexOnStartup=true --kube-context movie-api --server-side=false
+kubectl --context minikube -n default logs --follow deployment/elasticsearch-movie-api --timestamps
 ```
 
 After the import completes, turn the setting off. The existing index will then be kept on later restarts rather than imported again:
 
 ```powershell
-helm upgrade --install elasticsearch-movie-api .\deploy\helm\elasticsearch-movie-api -f .\deploy\helm\elasticsearch-movie-api\values-dev.yaml --set elasticsearch.resetIndexOnStartup=false --kube-context movie-api --server-side=false
+helm upgrade --install elasticsearch-movie-api ./deploy/helm/elasticsearch-movie-api -f ./deploy/helm/elasticsearch-movie-api/values-dev.yaml --set elasticsearch.resetIndexOnStartup=false --kube-context movie-api --server-side=false
 ```
 
 Do not leave the reset setting enabled: each API pod restart would delete and rebuild the index. If indexing fails partway through, check the last completed batch and PVC usage, resolve the storage issue, then repeat the index reset.
@@ -104,13 +112,13 @@ Use this only if the Elasticsearch PVC itself must be recreated. It permanently 
 First inspect the PVC names and identify the one belonging to `elasticsearch-movie-api-es-default-0`. Then stop the API and Elasticsearch resource before deleting that specific claim:
 
 ```powershell
-kubectl --context movie-api -n default get pvc
-kubectl --context movie-api -n default scale deployment/elasticsearch-movie-api --replicas=0
-kubectl --context movie-api -n default delete elasticsearch elasticsearch-movie-api
-kubectl --context movie-api -n default get pvc
+kubectl --context minikube -n default get pvc
+kubectl --context minikube -n default scale deployment/elasticsearch-movie-api --replicas=0
+kubectl --context minikube -n default delete elasticsearch elasticsearch-movie-api
+kubectl --context minikube -n default get pvc
 $pvcName = Read-Host "Enter the exact Elasticsearch data PVC name shown above"
-kubectl --context movie-api -n default delete pvc $pvcName
-helm upgrade --install elasticsearch-movie-api .\deploy\helm\elasticsearch-movie-api -f .\deploy\helm\elasticsearch-movie-api\values-dev.yaml --set elasticsearch.resetIndexOnStartup=false --kube-context movie-api --server-side=false
+kubectl --context minikube -n default delete pvc $pvcName
+helm upgrade --install elasticsearch-movie-api ./deploy/helm/elasticsearch-movie-api -f ./deploy/helm/elasticsearch-movie-api/values-dev.yaml --set elasticsearch.resetIndexOnStartup=false --kube-context movie-api --server-side=false
 ```
 
 Recreate the Elasticsearch resource and API from Helm afterward. Do not delete a PVC unless its name has been confirmed as the Elasticsearch data claim; deleting the wrong claim destroys unrelated data.
@@ -122,7 +130,7 @@ Other ways to install or inspect the chart, kept here for reference:
 ```powershell
 helm install es-quickstart elastic/eck-elasticsearch -n elastic-stack --create-namespace
 
-kubectl apply -f deploy\helm\elasticsearch-movie-api\templates\deployment-elasticsearch.yaml
+kubectl apply -f deploy/helm/elasticsearch-movie-api/templates/deployment-elasticsearch.yaml
 
 helm install elasticsearch . -f values-dev.yaml
 # or if already exists
@@ -140,12 +148,24 @@ Get the generated password:
 ```powershell
 kubectl get secret elasticsearch-movie-api-es-elastic-user -o jsonpath='{.data.elastic}' | ForEach-Object { [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($_)) }
 ```
+On Ubuntu:
+
+```bash
+kubectl get secret elasticsearch-movie-api-es-elastic-user -o jsonpath='{.data.elastic}' | base64 --decode
+```
 
 For temporarily encoding a user:
 
 ```powershell
-$encoded = kubectl --context movie-api -n default get secret elasticsearch-movie-api-es-elastic-user -o jsonpath='{.data.elastic}'
+$encoded = kubectl --context minikube -n default get secret elasticsearch-movie-api-es-elastic-user -o jsonpath='{.data.elastic}'
 [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($encoded))
+```
+
+On Ubuntu:
+
+```bash
+encoded=$(kubectl --context minikube -n default get secret elasticsearch-movie-api-es-elastic-user -o jsonpath='{.data.elastic}')
+printf '%s' "$encoded" | base64 --decode
 ```
 
 ## Check The Ingress
@@ -153,24 +173,37 @@ $encoded = kubectl --context movie-api -n default get secret elasticsearch-movie
 Check the Ingress and call the API through it:
 
 ```powershell
-kubectl --context movie-api get ingress elasticsearch-movie-api-ingress
-Invoke-RestMethod "http://localhost:7176/movies/search?title=matrix"
+kubectl --context minikube get ingress elasticsearch-movie-api-ingress
+Invoke-RestMethod "http://localhost:7176/movies/search/title?title=matrix"
 ```
+
+On Ubuntu:
+
+```bash
+kubectl --context minikube get ingress elasticsearch-movie-api-ingress
+curl "http://localhost:7176/"
+curl "http://localhost:7176/movies/search/title?title=20th"
+```
+
 
 ## Rebuild And Redeploy
 
 For later rebuilds, repeat the Docker build and image load commands, then restart the deployment so Kubernetes replaces pods using the same `latest` tag:
 
 ```powershell
-kubectl --context movie-api rollout restart deployment/elasticsearch-movie-api
-kubectl --context movie-api rollout status deployment/elasticsearch-movie-api --timeout=180s
+kubectl --context minikube rollout restart deployment/elasticsearch-movie-api
+kubectl --context minikube rollout status deployment/elasticsearch-movie-api --timeout=180s
 ```
 
 ## Stop The Cluster
 
 ```powershell
-minikube stop -p movie-api
+minikube stop -p minikube
 ```
+
+## Performance: check performance log
+
+kubectl --context minikube -n default exec deploy/elasticsearch-movie-api -- tail -f /app/execution.log
 
 ## Troubleshooting: Disk I/O Hitting 100% After Starting Minikube
 
@@ -197,19 +230,19 @@ podTemplate:
 After changing the chart, re-run the Helm upgrade so the change actually reaches the cluster, then confirm a new revision was created and the pod picked up the init container:
 
 ```powershell
-helm upgrade --install elasticsearch-movie-api .\deploy\helm\elasticsearch-movie-api -f .\deploy\helm\elasticsearch-movie-api\values-dev.yaml --kube-context movie-api --server-side=false
+helm upgrade --install elasticsearch-movie-api ./deploy/helm/elasticsearch-movie-api -f ./deploy/helm/elasticsearch-movie-api/values-dev.yaml --kube-context movie-api --server-side=false
 helm history elasticsearch-movie-api
-kubectl --context movie-api get pod elasticsearch-movie-api-es-default-0 -o jsonpath='{.spec.initContainers[*].name}'
-kubectl --context movie-api get pods
+kubectl --context minikube get pod elasticsearch-movie-api-es-default-0 -o jsonpath='{.spec.initContainers[*].name}'
+kubectl --context minikube get pods
 ```
 
 **Checking the data volume:**
 
 ```powershell
-kubectl get pvc --context movie-api
-kubectl get pv --context movie-api
-kubectl get storageclass --context movie-api
-kubectl exec elasticsearch-movie-api-es-default-0 --context movie-api -- df -h /usr/share/elasticsearch/data
+kubectl get pvc --context minikube
+kubectl get pv --context minikube
+kubectl get storageclass --context minikube
+kubectl exec elasticsearch-movie-api-es-default-0 --context minikube -- df -h /usr/share/elasticsearch/data
 ```
 
 Note: the PVC reports a 1Gi capacity (ECK's default, since the chart defines no `volumeClaimTemplates`), but minikube's `standard` StorageClass uses the `k8s.io/minikube-hostpath` provisioner, which does not enforce that quota — actual space is bounded by the underlying node disk instead.

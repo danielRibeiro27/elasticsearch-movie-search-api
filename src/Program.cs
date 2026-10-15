@@ -18,16 +18,20 @@ builder.Services.AddSingleton(serviceProvider =>
     CreateElasticsearchClient(
         serviceProvider.GetRequiredService<IOptions<ElasticsearchOptions>>().Value));
 
-// Share one instance between startup indexing and API repository requests.
+// builder.Services.AddSingleton<IMovieRepository, MovieCsvRepository>();
+
+//Share one instance between startup indexing and API repository requests.
 builder.Services.AddSingleton<ElasticsearchService>();
 builder.Services.AddSingleton<IMovieRepository>(serviceProvider =>
     serviceProvider.GetRequiredService<ElasticsearchService>());
 
-// The host awaits indexing during startup before it begins serving requests.
+//The host awaits indexing during startup before it begins serving requests.
 builder.Services.AddHostedService<ElasticsearchService>(serviceProvider =>
     serviceProvider.GetRequiredService<ElasticsearchService>());
 
 var app = builder.Build();
+
+/////////////////////////////////////////////////////////////////////////////
 
 app.MapGet("/", () => "Hello World!");
 
@@ -63,7 +67,17 @@ app.MapGet("/movies/search/overview", async (string overview, IMovieRepository r
     }
 });
 
+app.MapGet("/movies/search/id", async (string id, IMovieRepository repository) =>
+{
+
+    var result = (await repository.SearchById(id));
+    return Results.Ok(new { result });
+
+});
+
 app.Run();
+
+///////////////////////////////////////////////////////////////////////////////////
 
 static ElasticsearchClient CreateElasticsearchClient(ElasticsearchOptions options)
 {
